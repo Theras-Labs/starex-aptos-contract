@@ -1,0 +1,22 @@
+[package]
+name = "starex1"
+version = "1.0.0"
+authors = []
+
+[addresses]
+starex1='8b98745737e214fb558c6aebb9e20ac44df86829b33ffaf833150df9b436cb05'
+
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "main"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies.AptosTokenObjects]
+git = 'https://github.com/aptos-labs/aptos-core.git'
+rev = 'main'
+subdir = 'aptos-move/framework/aptos-token-objects'
+
+[dev-dependencies]
