@@ -1,4 +1,4 @@
-module starex1::nft_starship {
+module starex1::nft_asset {
     use aptos_framework::account::{Self, SignerCapability};
     use aptos_framework::fungible_asset::{Self, Metadata};
     use aptos_framework::primary_fungible_store;
@@ -20,12 +20,11 @@ module starex1::nft_starship {
     friend starex1::manager_shop;
     friend starex1::manager_claim;
 
-
     // for test
     const UNIT_PRICE: u64 = 100000000;
 
     #[event]
-    struct MintStarShipEvent has drop, store {
+    struct MintAssetEvent has drop, store {
         name: String,
         tier: u64,
         model_type: String,
@@ -43,7 +42,7 @@ module starex1::nft_starship {
     }
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
-    struct StarShip has key {
+    struct Asset has key {
         name: String,
         tier: u64,
         model_type: String,
@@ -52,10 +51,10 @@ module starex1::nft_starship {
     }
 
 
-    const APP_OBJECT_SEED: vector<u8> = b"STARSHIP_SEED";
-    const STARSHIP_COLLECTION_NAME: vector<u8> = b"STARSHIP Collection";
-    const STARSHIP_COLLECTION_DESCRIPTION: vector<u8> = b"Race through the cosmos, collect unique spaceship NFTs, and dominate the stars";
-    const STARSHIP_COLLECTION_URI: vector<u8> = b"https://yt3.ggpht.com/zw7AMLPxGb5ebP5FomQdqt3M9UbxGUsF_dfYErUoUY0yH2THhY_O_N5PUlECgIOiCCV0-cAl=s88-c-k-c0x00ffffff-no-rj";
+    const APP_OBJECT_SEED: vector<u8> = b"STAREX_ASSET";
+    const ASSET_COLLECTION_NAME: vector<u8> = b"STAREX ASSETS Collection";
+    const ASSET_COLLECTION_DESCRIPTION: vector<u8> = b"Some utility asset";
+    const ASSET_COLLECTION_URI: vector<u8> = b"https://yt3.ggpht.com/zw7AMLPxGb5ebP5FomQdqt3M9UbxGUsF_dfYErUoUY0yH2THhY_O_N5PUlECgIOiCCV0-cAl=s88-c-k-c0x00ffffff-no-rj";
 
     /// Action not authorized because the signer is not the admin of this module
     const ENOT_AUTHORIZED: u64 = 1;
@@ -74,7 +73,7 @@ module starex1::nft_starship {
             extend_ref,
         });
 
-        create_starship_collection(app_signer);
+        create_asset_collection(app_signer);
 
         // todo: add operator signer here
 
@@ -88,12 +87,12 @@ module starex1::nft_starship {
         });
     }
 
-    // Create the collection that will hold all the Starships
+    // Create the collection that will hold all the Assets
     // todo: change into dynamics collection for 1155
-    fun create_starship_collection(creator: &signer) {
-        let name = string::utf8(STARSHIP_COLLECTION_NAME);
-        let description = string::utf8(STARSHIP_COLLECTION_DESCRIPTION);
-        let uri = string::utf8(STARSHIP_COLLECTION_URI);
+    fun create_asset_collection(creator: &signer) {
+        let name = string::utf8(ASSET_COLLECTION_NAME);
+        let description = string::utf8(ASSET_COLLECTION_DESCRIPTION);
+        let uri = string::utf8(ASSET_COLLECTION_URI);
 
         collection::create_unlimited_collection(
             creator,
@@ -105,14 +104,15 @@ module starex1::nft_starship {
     }
 
     // admin
-    public entry fun mint_collectible_admin(user: &signer, model_type: String, tier: u64) acquires AppCapability, ModuleData{
+    public entry fun mint_collectible_admin(user: &signer, model_type: String) acquires AppCapability, ModuleData{
         let module_data = borrow_global_mut<ModuleData>(@starex1);
         assert!(module_data.minting_enabled, error::permission_denied(EMINTING_DISABLED));
         
         let user_addr = address_of(user);
-        let name: String = string::utf8(STARSHIP_COLLECTION_NAME);
-        let description: String =  string::utf8(STARSHIP_COLLECTION_DESCRIPTION);
-        let uri: String = string::utf8(STARSHIP_COLLECTION_URI);
+        let name: String = string::utf8(ASSET_COLLECTION_NAME);
+        let description: String =  string::utf8(ASSET_COLLECTION_DESCRIPTION);
+        let uri: String = string::utf8(ASSET_COLLECTION_URI);
+        let tier:u64 = 1;
 
 
         let constructor_ref = token::create_named_token(
@@ -133,7 +133,7 @@ module starex1::nft_starship {
         // tier: u64,
         // model_type: String,
         // initialize/set default struct values
-        let collectible = StarShip {
+        let collectible = Asset {
             name,
             tier,
             model_type,
@@ -144,8 +144,8 @@ module starex1::nft_starship {
         move_to(&token_signer, collectible);
 
         // Emit event for minting token
-        event::emit<MintStarShipEvent>(
-            MintStarShipEvent {
+        event::emit<MintAssetEvent>(
+            MintAssetEvent {
             name,
             tier,
             model_type,
@@ -159,11 +159,13 @@ module starex1::nft_starship {
     // update with admin operator?
     // friends because of operator
     // cross call
-    public(friend) fun mint_collectible_operator(user: &signer, model_type: String, tier: u64) acquires AppCapability  {
-        let name = string::utf8(STARSHIP_COLLECTION_NAME);
-        let uri = string::utf8(STARSHIP_COLLECTION_URI); // different uri
-        let description = string::utf8(STARSHIP_COLLECTION_DESCRIPTION);
+    public(friend) fun mint_collectible_operator(user: &signer, model_type: String) acquires AppCapability  {
+        let name = string::utf8(ASSET_COLLECTION_NAME);
+        let uri = string::utf8(ASSET_COLLECTION_URI); // different uri
+        let description = string::utf8(ASSET_COLLECTION_DESCRIPTION);
         let user_addr = address_of(user);
+        let tier:u64 = 1;
+
 
         let constructor_ref = token::create_named_token(
             &get_app_signer(get_app_signer_address()),
@@ -179,7 +181,7 @@ module starex1::nft_starship {
         let burn_ref = token::generate_burn_ref(&constructor_ref);
         let transfer_ref = object::generate_transfer_ref(&constructor_ref);
 
-        let collectible = StarShip {
+        let collectible = Asset {
             name,
             tier,
             model_type,
@@ -190,8 +192,8 @@ module starex1::nft_starship {
         move_to(&token_signer, collectible);
 
         // Emit event for minting token
-        event::emit<MintStarShipEvent>(
-            MintStarShipEvent {
+        event::emit<MintAssetEvent>(
+            MintAssetEvent {
             name,
             tier,
             model_type,
@@ -230,19 +232,19 @@ module starex1::nft_starship {
 
 
     #[view]
-    public fun has_starship(owner_addr: address): (bool) {
-        let token_address = get_starship_address(&owner_addr);
-        let has_asset = exists<StarShip>(token_address);
+    public fun has_asset(owner_addr: address): (bool) {
+        let token_address = get_asset_address(&owner_addr);
+        let has_asset = exists<Asset>(token_address);
 
         has_asset
     }
 
     // Get reference token object (CAN'T modify the reference)
-    fun get_starship_address(creator_addr: &address): (address) {
+    fun get_asset_address(creator_addr: &address): (address) {
         let token_address = token::create_token_address(
             &get_app_signer_address(),
-            &string::utf8(STARSHIP_COLLECTION_NAME),
-            &string::utf8(STARSHIP_COLLECTION_NAME),
+            &string::utf8(ASSET_COLLECTION_NAME),
+            &string::utf8(ASSET_COLLECTION_NAME),
         );
         token_address
     }
@@ -284,7 +286,7 @@ module starex1::nft_starship {
         init_module(account);
     }
 
-    // Test minting direct starship
+    // Test minting direct asset
     // #[test(aptos = @0x1, account = @starex1, creator = @0x123)]
     // fun test_mint_collectible(aptos: &signer, account: &signer, creator: &signer) acquires AppCapability {
     //     setup_test(aptos, account, creator);
